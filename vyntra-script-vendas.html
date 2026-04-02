@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vyntra — Script de Vendas</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#F9F8F6;--surface:#FFFFFF;--card:#FAFAF8;--border:#EAEAE4;
+  --text:#1A1917;--muted:#8A8880;--accent:#7C3AED;--accent-lt:#EDE9FE;
+  --green:#059669;--amber:#D97706;--red:#DC2626;--cyan:#0891B2;
+  --shadow:0 2px 8px rgba(0,0,0,.06),0 1px 2px rgba(0,0,0,.04);
+}
+body{background:var(--bg);color:var(--text);font-family:'Plus Jakarta Sans',sans-serif;min-height:100vh}
+
+/* NAV */
+.nav{background:var(--surface);border-bottom:1px solid var(--border);padding:0 24px;height:54px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50}
+.nav-logo{font-size:15px;font-weight:800;letter-spacing:-.02em}
+.nav-logo em{font-style:normal;color:#7C3AED}
+.stage-progress{display:flex;align-items:center;gap:6px}
+.sp-dot{width:28px;height:28px;border-radius:50%;border:2px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:var(--muted);cursor:pointer;transition:all .2s}
+.sp-dot.active{background:var(--accent);border-color:var(--accent);color:#fff;transform:scale(1.1)}
+.sp-dot.done{background:var(--green);border-color:var(--green);color:#fff}
+.sp-line{width:20px;height:2px;background:var(--border)}
+.sp-line.done{background:var(--green)}
+.timer-display{font-size:13px;font-weight:700;color:var(--muted);font-variant-numeric:tabular-nums;background:var(--bg);padding:5px 12px;border-radius:8px;border:1px solid var(--border)}
+
+/* LAYOUT */
+.layout{display:grid;grid-template-columns:260px 1fr 260px;gap:0;min-height:calc(100vh - 54px)}
+
+/* SIDEBAR LEFT */
+.sidebar-l{border-right:1px solid var(--border);padding:20px 0;background:var(--surface)}
+.stage-nav-item{display:flex;align-items:center;gap:12px;padding:12px 20px;cursor:pointer;transition:background .15s;border-left:3px solid transparent}
+.stage-nav-item:hover{background:var(--bg)}
+.stage-nav-item.active{background:var(--accent-lt);border-left-color:var(--accent)}
+.sni-icon{width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.sni-label{font-size:13px;font-weight:700;line-height:1.3}
+.sni-sub{font-size:11px;color:var(--muted);margin-top:1px}
+.sni-check{margin-left:auto;font-size:14px;color:var(--green)}
+
+.sidebar-section-label{padding:16px 20px 6px;font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+
+/* MAIN */
+.main{padding:28px;overflow-y:auto;max-height:calc(100vh - 54px)}
+.stage-header{margin-bottom:24px}
+.stage-num{font-size:11px;font-weight:800;color:var(--accent);text-transform:uppercase;letter-spacing:.12em;margin-bottom:6px}
+.stage-title{font-size:26px;font-weight:800;letter-spacing:-.03em;margin-bottom:8px}
+.stage-desc{font-size:14px;color:var(--muted);line-height:1.6;max-width:560px}
+
+/* OBJECTIVES */
+.objectives{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:24px}
+.obj-tag{font-size:12px;font-weight:600;padding:5px 12px;border-radius:100px;border:1.5px solid}
+
+/* SCRIPT BLOCK */
+.script-block{background:var(--surface);border:1.5px solid var(--border);border-radius:16px;margin-bottom:16px;overflow:hidden;box-shadow:var(--shadow)}
+.sb-header{padding:14px 18px;display:flex;align-items:center;gap:12px;cursor:pointer;user-select:none}
+.sb-icon{font-size:18px;width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.sb-title{font-size:14px;font-weight:700;flex:1}
+.sb-badge{font-size:11px;font-weight:700;padding:3px 10px;border-radius:100px}
+.sb-chevron{transition:transform .2s;color:var(--muted)}
+.script-block.open .sb-chevron{transform:rotate(180deg)}
+.sb-body{display:none;padding:0 18px 18px;border-top:1.5px solid var(--border)}
+.script-block.open .sb-body{display:block}
+
+/* SCRIPT TEXT */
+.script-text{background:#F4F3EF;border-radius:12px;padding:16px;font-size:14px;line-height:1.8;color:var(--text);margin-top:14px;border-left:3px solid var(--accent);white-space:pre-line}
+.script-text .placeholder{color:var(--accent);font-weight:700;background:rgba(124,58,237,.1);border-radius:4px;padding:0 4px}
+
+/* CHECKLIST */
+.checklist{margin-top:14px;display:flex;flex-direction:column;gap:8px}
+.check-item{display:flex;align-items:flex-start;gap:10px;padding:10px 14px;background:var(--card);border:1.5px solid var(--border);border-radius:10px;cursor:pointer;transition:all .15s}
+.check-item:hover{border-color:var(--accent);background:var(--accent-lt)}
+.check-item.checked{background:#F0FDF4;border-color:#BBF7D0}
+.check-box{width:18px;height:18px;border:2px solid var(--border);border-radius:5px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:11px;margin-top:1px;transition:all .2s}
+.check-item.checked .check-box{background:var(--green);border-color:var(--green);color:#fff}
+.check-text{font-size:13px;font-weight:500;flex:1}
+.check-item.checked .check-text{text-decoration:line-through;color:var(--muted)}
+
+/* TIPS */
+.tip{background:#FFFBEB;border:1.5px solid #FDE68A;border-radius:12px;padding:14px 16px;font-size:13px;line-height:1.6;color:#92400E;margin-top:12px}
+.tip strong{color:#D97706}
+.tip-red{background:#FEF2F2;border-color:#FECACA;color:#7F1D1D}
+.tip-red strong{color:#DC2626}
+.tip-green{background:#F0FDF4;border-color:#BBF7D0;color:#14532D}
+.tip-green strong{color:#059669}
+
+/* OBJECTIONS IN SCRIPT */
+.obj-block{background:#FEF2F2;border:1.5px solid #FECACA;border-radius:12px;padding:14px;margin-top:8px}
+.obj-q{font-size:13px;font-weight:700;color:var(--red);margin-bottom:6px}
+.obj-a{font-size:13px;color:var(--text);line-height:1.6}
+
+/* NAV BUTTONS */
+.nav-btns{display:flex;gap:10px;margin-top:24px}
+.btn-prev{background:var(--surface);border:1.5px solid var(--border);border-radius:12px;padding:12px 24px;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;color:var(--muted)}
+.btn-prev:hover{border-color:var(--text);color:var(--text)}
+.btn-next{background:var(--accent);color:#fff;border:none;border-radius:12px;padding:12px 28px;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;transition:background .15s;display:flex;align-items:center;gap:8px}
+.btn-next:hover{background:#6D28D9}
+.btn-next:disabled{background:var(--muted);cursor:not-allowed}
+
+/* SIDEBAR RIGHT */
+.sidebar-r{border-left:1px solid var(--border);padding:20px;background:var(--surface)}
+.sr-section{margin-bottom:24px}
+.sr-title{font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:12px}
+.sr-card{background:var(--bg);border:1.5px solid var(--border);border-radius:12px;padding:12px 14px;margin-bottom:8px;font-size:13px}
+.sr-card-label{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px}
+.sr-card-val{font-weight:700;font-size:15px}
+
+/* SCORE */
+.score-ring{width:80px;height:80px;border-radius:50%;background:conic-gradient(var(--accent) var(--pct), var(--border) 0);display:flex;align-items:center;justify-content:center;margin:0 auto 12px;position:relative}
+.score-inner{width:60px;height:60px;border-radius:50%;background:var(--surface);display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:900;color:var(--accent)}
+
+/* NOTES */
+.notes-input{width:100%;background:var(--bg);border:1.5px solid var(--border);border-radius:10px;padding:10px;font-family:inherit;font-size:12px;color:var(--text);resize:none;outline:none;height:100px}
+.notes-input:focus{border-color:var(--accent)}
+.btn-save-note{width:100%;background:var(--text);color:#fff;border:none;border-radius:8px;padding:9px;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;margin-top:8px}
+
+@media(max-width:900px){.layout{grid-template-columns:1fr}.sidebar-l,.sidebar-r{display:none}}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-logo"><em>V</em>yntra Script de Vendas</div>
+  <div class="stage-progress" id="stage-progress"></div>
+  <div class="timer-display" id="timer">⏱ 00:00</div>
+</nav>
+
+<div class="layout">
+
+  <!-- SIDEBAR ESQUERDA -->
+  <aside class="sidebar-l" id="sidebar-l">
+    <div class="sidebar-section-label">Etapas da Venda</div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main" id="main-content"></main>
+
+  <!-- SIDEBAR DIREITA -->
+  <aside class="sidebar-r">
+    <div class="sr-section">
+      <div class="sr-title">Score da Reunião</div>
+      <div class="score-ring" id="score-ring" style="--pct:0deg">
+        <div class="score-inner" id="score-num">0</div>
+      </div>
+      <div style="text-align:center;font-size:11px;color:var(--muted)">Marque os itens para aumentar</div>
+    </div>
+
+    <div class="sr-section">
+      <div class="sr-title">Dados do Lead</div>
+      <div class="sr-card"><div class="sr-card-label">Nome</div><input id="lead-name" style="background:none;border:none;font-family:inherit;font-size:14px;font-weight:700;color:var(--text);width:100%;outline:none" placeholder="Digite aqui..."></div>
+      <div class="sr-card"><div class="sr-card-label">Empresa</div><input id="lead-company" style="background:none;border:none;font-family:inherit;font-size:13px;color:var(--text);width:100%;outline:none" placeholder="Empresa..."></div>
+      <div class="sr-card"><div class="sr-card-label">Valor estimado</div><input id="lead-value" style="background:none;border:none;font-family:inherit;font-size:14px;font-weight:700;color:var(--text);width:100%;outline:none" placeholder="R$ 0"></div>
+      <div class="sr-card"><div class="sr-card-label">Dor principal</div><input id="lead-pain" style="background:none;border:none;font-family:inherit;font-size:12px;color:var(--text);width:100%;outline:none" placeholder="Qual problema tem?"></div>
+    </div>
+
+    <div class="sr-section">
+      <div class="sr-title">Notas da Reunião</div>
+      <textarea class="notes-input" id="notes-area" placeholder="Anote aqui o que o lead diz de importante..."></textarea>
+      <button class="btn-save-note" onclick="saveNotes()">💾 Salvar notas</button>
+    </div>
+
+    <div class="sr-section">
+      <div class="sr-title">Atalhos</div>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <button onclick="resetTimer()" style="background:var(--bg);border:1.5px solid var(--border);border-radius:8px;padding:8px 12px;font-family:inherit;font-size:12px;font-weight:600;cursor:pointer">⏱ Resetar timer</button>
+        <button onclick="exportNotes()" style="background:var(--bg);border:1.5px solid var(--border);border-radius:8px;padding:8px 12px;font-family:inherit;font-size:12px;font-weight:600;cursor:pointer">📋 Exportar notas</button>
+        <button onclick="resetAll()" style="background:var(--bg);border:1.5px solid #FECACA;border-radius:8px;padding:8px 12px;font-family:inherit;font-size:12px;font-weight:600;cursor:pointer;color:var(--red)">↺ Nova reunião</button>
+      </div>
+    </div>
+  </aside>
+</div>
+
+<script>
+// ── STAGES DATA ───────────────────────────────────────────
+const STAGES = [
+  {
+    id:'abertura', icon:'👋', bg:'#EDE9FE', color:'#7C3AED',
+    label:'Abertura', sub:'Rapport & contexto',
+    title:'Abertura & Conexão',
+    desc:'Os primeiros 2 minutos definem o tom de toda a reunião. O objetivo aqui não é vender — é criar um ambiente seguro onde o lead se abra.',
+    objectives:['Criar rapport genuíno','Definir agenda','Gerar confiança inicial'],
+    objColors:['#7C3AED','#3B82F6','#10B981'],
+    blocks:[
+      {
+        icon:'💬', bg:'#EDE9FE', title:'Script de Abertura', badge:'Obrigatório', badgeBg:'#EDE9FE', badgeColor:'#7C3AED',
+        script:`[Nome], muito bom falar com você!
+
+Antes de começar, deixa eu te passar como vai funcionar nossa conversa:
+
+Reservei [X] minutos para isso. Nos primeiros 10 minutos, quero entender sua realidade — sem pressa. Depois te mostro se e como a Vyntra pode ajudar.
+
+Se ao final não fizer sentido, tudo bem — eu mesmo te digo isso. Combinado?
+
+[Aguarda confirmação]
+
+Perfeito. Me conta: o que te trouxe até aqui? O que estava travando?`,
+        checks:['Confirmou o tempo disponível','Lead pareceu à vontade','Agenda apresentada claramente']
+      },
+      {
+        icon:'🎯', bg:'#FEF3C7', title:'Perguntas de Diagnose', badge:'Crítico', badgeBg:'#FEF3C7', badgeColor:'#D97706',
+        script:`Situação atual:
+"Hoje, como é o processo de [área que você resolve]? Me descreve um dia típico."
+
+Dor:
+"Qual parte disso mais te frustra? O que acontece quando isso falha?"
+
+Impacto:
+"Isso tá custando quanto para a empresa — em tempo, dinheiro, oportunidades perdidas?"
+
+Tentativas anteriores:
+"Você já tentou resolver isso de alguma forma? O que funcionou, o que não funcionou?"`,
+        checks:['Mapeou a situação atual','Identificou a dor principal','Quantificou o impacto (R$ ou horas)','Entendeu tentativas anteriores']
+      }
+    ],
+    tip:{type:'amber',text:'<strong>Regra de ouro:</strong> Fale no máximo 20% do tempo na abertura. Faça perguntas abertas e escute de verdade. Cada detalhe que o lead compartilha é ouro.'}
+  },
+  {
+    id:'diagnostico', icon:'🔍', bg:'#F0F9FF', color:'#0891B2',
+    label:'Diagnose', sub:'Entender a dor fundo',
+    title:'Diagnose Profunda',
+    desc:'Aqui você aprofunda o entendimento do problema. Quanto mais o lead falar, mais ele se convence de que precisa de uma solução.',
+    objectives:['Quantificar o problema','Entender urgência','Mapear decisores'],
+    objColors:['#0891B2','#EF4444','#F59E0B'],
+    blocks:[
+      {
+        icon:'💰', bg:'#F0FDF4', title:'Quantificar o Problema', badge:'Alto impacto', badgeBg:'#F0FDF4', badgeColor:'#059669',
+        script:`"Você me disse que sua equipe gasta [X] horas por semana nisso.
+
+Isso representa — em custo — em torno de R$ [calcule: horas × salário hora] por mês. Sem contar as oportunidades que ficam na mesa.
+
+Anualmente, estamos falando de aproximadamente R$ [X × 12].
+
+Só para confirmar: isso faz sentido como estimativa?"
+
+[Se confirmar, anote. Esse número volta na proposta.]`,
+        checks:['Calculou o custo atual do problema','Lead concordou com o cálculo','Número anotado para a proposta']
+      },
+      {
+        icon:'⚡', bg:'#FEF2F2', title:'Criar Urgência Real', badge:'Cuidado', badgeBg:'#FEF2F2', badgeColor:'#DC2626',
+        script:`"Me conta uma coisa: se esse problema continuar por mais 6 meses, o que acontece com o negócio?"
+
+[Deixa o lead responder]
+
+"E se um concorrente resolver isso antes de você — como isso afeta sua posição no mercado?"
+
+[Deixa o lead responder — não force. A urgência tem que vir dele.]`,
+        checks:['Lead verbalizou a urgência','Consequências futuras mapeadas','Urgência é real, não forçada']
+      },
+      {
+        icon:'👥', bg:'#F5F3FF', title:'Mapear Decisores', badge:'Estratégico', badgeBg:'#F5F3FF', badgeColor:'#7C3AED',
+        script:`"Para avançarmos juntos: você é quem toma essa decisão, ou tem mais alguém envolvido?"
+
+Se houver sócios/aprovadores:
+"Faz sentido incluir [nome/cargo] na próxima conversa? Quero garantir que todos tenham as mesmas informações."`,
+        checks:['Identificou todos os decisores','Sabe se há necessidade de aprovação','Próximos passos claros com o decisor']
+      }
+    ],
+    tip:{type:'green',text:'<strong>Insight:</strong> O lead que se convence durante a diagnose fecha muito mais fácil. Sua função aqui é fazer perguntas que o lead nunca se fez. Ele vai te agradecer pela clareza.'}
+  },
+  {
+    id:'apresentacao', icon:'📊', bg:'#F0FDF4', color:'#059669',
+    label:'Apresentação', sub:'Mostrar a solução',
+    title:'Apresentação da Solução',
+    desc:'Conecte cada funcionalidade a uma dor específica que o lead mencionou. Nunca apresente features — apresente transformações.',
+    objectives:['Conectar solução à dor','Mostrar resultado concreto','Diferenciar da concorrência'],
+    objColors:['#059669','#7C3AED','#F59E0B'],
+    blocks:[
+      {
+        icon:'🔗', bg:'#F0FDF4', title:'Ponte Dor → Solução', badge:'Personalizado', badgeBg:'#F0FDF4', badgeColor:'#059669',
+        script:`"Com base em tudo que você me contou — especialmente [DOR PRINCIPAL DO LEAD] — deixa eu te mostrar exatamente como a Vyntra resolve isso.
+
+[PROBLEMA 1 mencionado pelo lead]:
+→ A Vyntra faz [funcionalidade específica], o que significa que [resultado direto].
+
+[PROBLEMA 2]:
+→ Com [funcionalidade], você vai [transformação concreta].
+
+Clientes com o mesmo perfil que o seu tiveram [resultado real com número].
+
+Faz sentido até aqui?"`,
+        checks:['Usou as palavras do próprio lead','Conectou cada feature a uma dor específica','Mencionou resultado com número']
+      },
+      {
+        icon:'📈', bg:'#EDE9FE', title:'Case Relevante', badge:'Prova social', badgeBg:'#EDE9FE', badgeColor:'#7C3AED',
+        script:`"Deixa eu te contar sobre um cliente nosso com uma realidade parecida com a sua.
+
+A [empresa similar] chegou até a Vyntra com [situação: mesmo problema].
+
+Em [prazo], conseguimos [resultado específico com número].
+
+O que eles me disseram foi: [frase real ou paráfrase do feedback].
+
+Você se enxerga nessa situação?"`,
+        checks:['Case foi relevante para o perfil','Lead se identificou','Resultado com número apresentado']
+      }
+    ],
+    tip:{type:'amber',text:'<strong>Nunca:</strong> "Nossa plataforma tem X recursos, Y integrações e Z funcionalidades." <br><strong>Sempre:</strong> "Você me disse que X era um problema — veja o que acontece quando resolvemos isso."'}
+  },
+  {
+    id:'proposta', icon:'💰', bg:'#FFFBEB', color:'#D97706',
+    label:'Proposta', sub:'Apresentar o preço',
+    title:'Proposta de Valor & Preço',
+    desc:'Preço nunca é o primeiro assunto. Primeiro o valor, depois o investimento. Apresente as opções com confiança — hesitação contamina.',
+    objectives:['Apresentar preço com confiança','Mostrar ROI claro','Fechar ou próximo passo'],
+    objColors:['#D97706','#059669','#7C3AED'],
+    blocks:[
+      {
+        icon:'⚖️', bg:'#FEF3C7', title:'Ancoragem de Valor', badge:'Crítico', badgeBg:'#FEF3C7', badgeColor:'#D97706',
+        script:`"Antes de falar em investimento, quero reforçar o que calculamos:
+
+O problema atual custa R$ [número calculado na diagnose] por mês.
+Anualmente: R$ [× 12].
+
+A Vyntra vai resolver isso. O investimento para fazer isso acontecer é [VALOR DA SOLUÇÃO].
+
+Ou seja: em [prazo de payback] o investimento já se paga — e a partir daí, cada mês é lucro líquido do processo."`,
+        checks:['Relembrou o custo do problema','Apresentou preço com confiança','Calculou o payback claramente']
+      },
+      {
+        icon:'📋', bg:'#F0FDF4', title:'As Opções', badge:'Flexível', badgeBg:'#F0FDF4', badgeColor:'#059669',
+        script:`"Tenho [2 ou 3] opções para você:
+
+OPÇÃO 1 — [Nome]: R$ [valor]/mês
+→ Inclui: [o que resolve a dor mínima]
+
+OPÇÃO 2 — [Nome]: R$ [valor]/mês [RECOMENDADO]
+→ Inclui: [solução completa]
+→ Por que recomendo: [razão baseada na dor do lead]
+
+OPÇÃO 3 — [Nome]: R$ [valor]/mês
+→ Para quem quer [escala adicional]
+
+Dado o que você me contou, eu recomendaria a [Opção 2]. Faz sentido para você?"`,
+        checks:['Apresentou 2-3 opções','Fez uma recomendação clara','Esperou a resposta sem falar primeiro']
+      }
+    ],
+    tip:{type:'red',text:'<strong>Nunca:</strong> Apresente o preço e continue falando por cima. Diga o preço. Pare. Espere. O silêncio é seu aliado — deixe o lead processar.'}
+  },
+  {
+    id:'fechamento', icon:'🏆', bg:'#F5F3FF', color:'#7C3AED',
+    label:'Fechamento', sub:'Avançar ou próximo passo',
+    title:'Fechamento & Próximos Passos',
+    desc:'O objetivo não é "vender" aqui — é confirmar se faz sentido e acordar um próximo passo claro. Nunca saia sem um comprometimento.',
+    objectives:['Confirmar fit','Superar objeção final','Acordar próximo passo com data'],
+    objColors:['#7C3AED','#EF4444','#059669'],
+    blocks:[
+      {
+        icon:'✅', bg:'#F5F3FF', title:'Teste de Fechamento', badge:'Direto', badgeBg:'#F5F3FF', badgeColor:'#7C3AED',
+        script:`"Com base em tudo que conversamos, você acha que a Vyntra resolve o problema que você me descreveu?"
+
+[Se sim]: "Ótimo. O que você precisaria ver para se sentir confortável em avançar?"
+
+[Se não]: "Entendo. O que ficou faltando? Tem alguma dúvida que não respondi?"`,
+        checks:['Fez o teste de fechamento','Ouviu a resposta completamente','Não respondeu antes de deixar o lead falar']
+      },
+      {
+        icon:'🛡️', bg:'#FEF2F2', title:'Objeções Finais', badge:'Preparado', badgeBg:'#FEF2F2', badgeColor:'#DC2626',
+        objections:[
+          {q:'"Preciso pensar"',a:'"Claro, decisão importante. Só pra eu entender melhor: o que especificamente você precisa pensar? Tem alguma dúvida que não esclarecemos?"'},
+          {q:'"Está caro"',a:'"Entendo. Lembrando que o problema atual custa R$ [X] por mês — ao não resolver, você também está pagando. Qual valor faria sentido para você?"'},
+          {q:'"Vou falar com meu sócio"',a:'"Perfeito! Posso preparar um resumo executivo de 1 página para facilitar essa conversa? E quem sabe incluímos seu sócio numa próxima chamada rápida."'},
+          {q:'"Não é o momento"',a:'"Entendo. O que precisaria mudar para o momento ser certo? Em [data futura], isso estaria mais resolvido?"'},
+        ],
+        checks:['Identificou a objeção real','Respondeu sem pressionar','Abriu espaço para avançar']
+      },
+      {
+        icon:'📅', bg:'#F0FDF4', title:'Próximo Passo Concreto', badge:'Sempre!', badgeBg:'#F0FDF4', badgeColor:'#059669',
+        script:`FECHAMENTO DIRETO:
+"Ótimo! Para começarmos, o próximo passo é [ação concreta: assinar proposta, enviar contrato, fazer pagamento]. Posso te enviar agora mesmo?"
+
+PRÓXIMO PASSO (se não fechou agora):
+"Vamos combinar assim: te envio a proposta detalhada até [amanhã/X horas]. Podemos falar novamente [data específica] às [hora] para tirar as últimas dúvidas. Funciona?"
+
+[Confirma na agenda na hora — não deixe "qualquer dia".]`,
+        checks:['Acordou um próximo passo claro com data','Agendou a próxima interação na hora','Lead confirmou o comprometimento']
+      }
+    ],
+    tip:{type:'green',text:'<strong>Regra final:</strong> Nunca saia de uma reunião sem um próximo passo com data e hora marcados. "Vou te ligar" sem data = oportunidade perdida.'}
+  }
+];
+
+// ── STATE ─────────────────────────────────────────────────
+let currentStage = 0;
+let checkedItems = JSON.parse(localStorage.getItem('vyntra_script_checks') || '{}');
+let notes = localStorage.getItem('vyntra_script_notes') || '';
+let timerSec = 0, timerRunning = false, timerInterval = null;
+
+function save(){localStorage.setItem('vyntra_script_checks',JSON.stringify(checkedItems))}
+
+// ── RENDER ────────────────────────────────────────────────
+function render(){
+  renderSidebarL();
+  renderProgress();
+  renderMain();
+  renderScore();
+  document.getElementById('notes-area').value = notes;
+}
+
+function renderProgress(){
+  const prog = document.getElementById('stage-progress');
+  prog.innerHTML = STAGES.map((s,i)=>{
+    const cls = i < currentStage ? 'done' : i === currentStage ? 'active' : '';
+    const line = i < STAGES.length-1 ? `<div class="sp-line ${i < currentStage?'done':''}"></div>` : '';
+    return `<div class="sp-dot ${cls}" onclick="goToStage(${i})" title="${s.label}">${i < currentStage ? '✓' : i+1}</div>${line}`;
+  }).join('');
+}
+
+function renderSidebarL(){
+  const sb = document.getElementById('sidebar-l');
+  sb.innerHTML = `<div class="sidebar-section-label">Etapas da Venda</div>` +
+    STAGES.map((s,i)=>`
+      <div class="stage-nav-item ${i===currentStage?'active':''}" onclick="goToStage(${i})">
+        <div class="sni-icon" style="background:${s.bg}">${s.icon}</div>
+        <div>
+          <div class="sni-label">${s.label}</div>
+          <div class="sni-sub">${s.sub}</div>
+        </div>
+        ${i < currentStage ? '<span class="sni-check">✓</span>' : ''}
+      </div>
+    `).join('');
+}
+
+function renderMain(){
+  const s = STAGES[currentStage];
+  const main = document.getElementById('main-content');
+  main.innerHTML = `
+    <div class="stage-header">
+      <div class="stage-num">Etapa ${currentStage+1} de ${STAGES.length}</div>
+      <div class="stage-title">${s.title}</div>
+      <div class="stage-desc">${s.desc}</div>
+    </div>
+    <div class="objectives">
+      ${s.objectives.map((o,i)=>`<span class="obj-tag" style="background:${s.objColors[i]}18;border-color:${s.objColors[i]}44;color:${s.objColors[i]}">${o}</span>`).join('')}
+    </div>
+    ${s.blocks.map((b,bi)=>renderBlock(b,bi)).join('')}
+    ${s.tip ? `<div class="tip ${s.tip.type==='red'?'tip-red':s.tip.type==='green'?'tip-green':''}">${s.tip.text}</div>` : ''}
+    <div class="nav-btns">
+      ${currentStage > 0 ? `<button class="btn-prev" onclick="goToStage(${currentStage-1})">← Anterior</button>` : ''}
+      ${currentStage < STAGES.length-1
+        ? `<button class="btn-next" onclick="goToStage(${currentStage+1})">Próxima Etapa →</button>`
+        : `<button class="btn-next" style="background:var(--green)" onclick="finishScript()">🏆 Finalizar Reunião</button>`}
+    </div>
+  `;
+  // auto-open first block
+  const firstBlock = document.querySelector('.script-block');
+  if(firstBlock) firstBlock.classList.add('open');
+}
+
+function renderBlock(b, bi){
+  const key = `${currentStage}-${bi}`;
+  const isOpen = true;
+  return `
+    <div class="script-block ${isOpen?'open':''}" id="block-${key}">
+      <div class="sb-header" onclick="toggleBlock('block-${key}')">
+        <div class="sb-icon" style="background:${b.bg}">${b.icon}</div>
+        <div class="sb-title">${b.title}</div>
+        <span class="sb-badge" style="background:${b.badgeBg};color:${b.badgeColor}">${b.badge}</span>
+        <svg class="sb-chevron" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/></svg>
+      </div>
+      <div class="sb-body">
+        ${b.script ? `<div class="script-text">${b.script.replace(/\[(.*?)\]/g,'<span class="placeholder">[$1]</span>')}</div>` : ''}
+        ${b.objections ? b.objections.map(o=>`
+          <div class="obj-block">
+            <div class="obj-q">"${o.q}"</div>
+            <div class="obj-a">${o.a}</div>
+          </div>`).join('') : ''}
+        ${(b.checks||[]).length ? `
+          <div class="checklist">
+            ${b.checks.map((c,ci)=>{
+              const ck = `${currentStage}-${bi}-${ci}`;
+              const isChecked = checkedItems[ck];
+              return `<div class="check-item ${isChecked?'checked':''}" onclick="toggleCheck('${ck}')">
+                <div class="check-box">${isChecked?'✓':''}</div>
+                <div class="check-text">${c}</div>
+              </div>`;
+            }).join('')}
+          </div>` : ''}
+      </div>
+    </div>`;
+}
+
+function toggleBlock(id){
+  document.getElementById(id).classList.toggle('open');
+}
+
+function toggleCheck(key){
+  checkedItems[key] = !checkedItems[key];
+  save();
+  renderMain();
+  renderScore();
+}
+
+function renderScore(){
+  const total = STAGES.reduce((a,s)=>a+s.blocks.reduce((b,bl)=>b+(bl.checks?.length||0),0),0);
+  const checked = Object.values(checkedItems).filter(Boolean).length;
+  const pct = total ? Math.round(checked/total*100) : 0;
+  const deg = Math.round(pct/100*360);
+  document.getElementById('score-ring').style.setProperty('--pct', deg+'deg');
+  document.getElementById('score-num').textContent = pct+'%';
+  document.getElementById('score-num').style.color = pct>=70?'#059669':pct>=40?'#D97706':'#7C3AED';
+}
+
+function goToStage(n){
+  if(n<0||n>=STAGES.length)return;
+  currentStage=n;
+  render();
+  document.getElementById('main-content').scrollTo(0,0);
+}
+
+function finishScript(){
+  const name = document.getElementById('lead-name').value || 'Lead';
+  alert(`🏆 Reunião com ${name} finalizada!\n\nPróximo passo: adicionar ao CRM e criar o follow-up.\n\nScore: ${document.getElementById('score-num').textContent}`);
+}
+
+function saveNotes(){
+  notes = document.getElementById('notes-area').value;
+  localStorage.setItem('vyntra_script_notes', notes);
+  const btn = document.querySelector('.btn-save-note');
+  btn.textContent = '✓ Salvo!'; setTimeout(()=>btn.textContent='💾 Salvar notas', 1500);
+}
+
+function exportNotes(){
+  const name = document.getElementById('lead-name').value || 'Lead';
+  const company = document.getElementById('lead-company').value || '';
+  const value = document.getElementById('lead-value').value || '';
+  const pain = document.getElementById('lead-pain').value || '';
+  const n = document.getElementById('notes-area').value;
+  const text = `REUNIÃO VYNTRA\n${'='.repeat(40)}\nLead: ${name} | ${company}\nValor: ${value} | Dor: ${pain}\n\nNOTAS:\n${n}\n\nData: ${new Date().toLocaleDateString('pt-BR')}`;
+  navigator.clipboard.writeText(text);
+  alert('Notas copiadas para a área de transferência!');
+}
+
+function resetAll(){
+  if(!confirm('Limpar todos os dados e começar nova reunião?'))return;
+  checkedItems={};notes='';currentStage=0;
+  save();localStorage.removeItem('vyntra_script_notes');
+  document.getElementById('lead-name').value='';
+  document.getElementById('lead-company').value='';
+  document.getElementById('lead-value').value='';
+  document.getElementById('lead-pain').value='';
+  resetTimer();render();
+}
+
+// TIMER
+function startTimer(){
+  if(timerRunning)return;
+  timerRunning=true;
+  timerInterval=setInterval(()=>{
+    timerSec++;
+    const m=Math.floor(timerSec/60).toString().padStart(2,'0');
+    const s=(timerSec%60).toString().padStart(2,'0');
+    const el=document.getElementById('timer');
+    el.textContent=`⏱ ${m}:${s}`;
+    if(timerSec>=2700)el.style.color='#DC2626';
+    else if(timerSec>=1800)el.style.color='#D97706';
+  },1000);
+}
+
+function resetTimer(){clearInterval(timerInterval);timerRunning=false;timerSec=0;document.getElementById('timer').textContent='⏱ 00:00';document.getElementById('timer').style.color='';}
+
+document.getElementById('timer').addEventListener('click',()=>{
+  if(timerRunning){clearInterval(timerInterval);timerRunning=false;}
+  else startTimer();
+});
+
+render();
+startTimer();
+</script>
+</body>
+</html>
